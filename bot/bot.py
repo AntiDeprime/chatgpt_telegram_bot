@@ -30,9 +30,9 @@ from telegram.constants import ParseMode
 
 from telegram.error import BadRequest
 
-from bot.database import Database
-from bot.config import MODELS, HELP_GROUP_CHAT_VIDEO_PATH, NEW_DIALOG_TIMEOUT, CHAT_MODES, ENABLE_MESSAGE_STREAMING, RETURN_N_GENERATED_IMAGES, IMAGE_SIZE, TELEGRAM_TOKEN, ALLOWED_TELEGRAM_USERNAMES
-from bot.openai_utils import ChatGPT, generate_images, transcribe_audio
+from database import Database
+from config import N_CHAT_MODES_PER_PAGE, MODELS, HELP_GROUP_CHAT_VIDEO_PATH, NEW_DIALOG_TIMEOUT, CHAT_MODES, ENABLE_MESSAGE_STREAMING, RETURN_N_GENERATED_IMAGES, IMAGE_SIZE, TELEGRAM_TOKEN, ALLOWED_TELEGRAM_USERNAMES
+from openai_utils import ChatGPT, generate_images, transcribe_audio
 
 # setup
 db = Database()
@@ -567,7 +567,7 @@ async def new_dialog_handle(update: Update, context: CallbackContext):
 
     user_id = update.message.from_user.id
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
-    db.set_user_attribute(user_id, "current_model", "gpt-3.5-turbo")
+    db.set_user_attribute(user_id, "current_model", MODELS["default_model"])
 
     db.start_new_dialog(user_id)
     await update.message.reply_text("Starting new dialog ✅")
@@ -590,12 +590,11 @@ async def cancel_handle(update: Update, context: CallbackContext):
 
 
 def get_chat_mode_menu(page_index: int):
-    n_chat_modes_per_page = n_chat_modes_per_page
     text = f"Select <b>chat mode</b> ({len(CHAT_MODES)} modes available):"
 
     # buttons
     chat_mode_keys = list(CHAT_MODES.keys())
-    page_chat_mode_keys = chat_mode_keys[page_index * n_chat_modes_per_page:(page_index + 1) * n_chat_modes_per_page]
+    page_chat_mode_keys = chat_mode_keys[page_index * N_CHAT_MODES_PER_PAGE:(page_index + 1) * N_CHAT_MODES_PER_PAGE]
 
     keyboard = []
     for chat_mode_key in page_chat_mode_keys:
@@ -603,9 +602,9 @@ def get_chat_mode_menu(page_index: int):
         keyboard.append([InlineKeyboardButton(name, callback_data=f"set_chat_mode|{chat_mode_key}")])
 
     # pagination
-    if len(chat_mode_keys) > n_chat_modes_per_page:
+    if len(chat_mode_keys) > N_CHAT_MODES_PER_PAGE:
         is_first_page = (page_index == 0)
-        is_last_page = ((page_index + 1) * n_chat_modes_per_page >= len(chat_mode_keys))
+        is_last_page = ((page_index + 1) * N_CHAT_MODES_PER_PAGE >= len(chat_mode_keys))
 
         if is_first_page:
             keyboard.append([
@@ -753,8 +752,8 @@ async def show_balance_handle(update: Update, context: CallbackContext):
         n_input_tokens, n_output_tokens = n_used_tokens_dict[model_key]["n_input_tokens"], n_used_tokens_dict[model_key]["n_output_tokens"]
         total_n_used_tokens += n_input_tokens + n_output_tokens
 
-        n_input_spent_dollars = MODELS["info"][model_key]["price_per_1000_input_tokens"] * (n_input_tokens / 1000)
-        n_output_spent_dollars = MODELS["info"][model_key]["price_per_1000_output_tokens"] * (n_output_tokens / 1000)
+        n_input_spent_dollars = MODELS["info"][model_key]["price_per_1M_input_tokens"] * (n_input_tokens / 10^6)
+        n_output_spent_dollars = MODELS["info"][model_key]["price_per_1M_output_tokens"] * (n_output_tokens / 10^6)
         total_n_spent_dollars += n_input_spent_dollars + n_output_spent_dollars
 
         details_text += f"- {model_key}: <b>{n_input_spent_dollars + n_output_spent_dollars:.03f}$</b> / <b>{n_input_tokens + n_output_tokens} tokens</b>\n"
@@ -790,27 +789,28 @@ async def edited_message_handle(update: Update, context: CallbackContext):
 async def error_handle(update: Update, context: CallbackContext) -> None:
     logger.error(msg="Exception while handling an update:", exc_info=context.error)
 
-    try:
-        # collect error message
-        tb_list = format_exception(None, context.error, context.error.__traceback__)
-        tb_string = "".join(tb_list)
-        update_str = update.to_dict() if isinstance(update, Update) else str(update)
-        message = (
-            f"An exception was raised while handling an update\n"
-            f"<pre>update = {escape(dumps(update_str, indent=2, ensure_ascii=False))}"
-            "</pre>\n\n"
-            f"<pre>{escape(tb_string)}</pre>"
-        )
+    # try:
+    #     # collect error message
+    #     tb_list = format_exception(None, context.error, context.error.__traceback__)
+    #     tb_string = "".join(tb_list)
+    #     update_str = update.to_dict() if isinstance(update, Update) else str(update)
+    #     message = (
+    #         f"An exception was raised while handling an update\n"
+    #         f"<pre>update = {escape(dumps(update_str, indent=2, ensure_ascii=False))}"
+    #         "</pre>\n\n"
+    #         f"<pre>{escape(tb_string)}</pre>"
+    #     )
 
-        # split text into multiple messages due to 4096 character limit
-        for message_chunk in split_text_into_chunks(message, 4096):
-            try:
-                await context.bot.send_message(update.effective_chat.id, message_chunk, parse_mode=ParseMode.HTML)
-            except BadRequest:
-                # answer has invalid characters, so we send it without parse_mode
-                await context.bot.send_message(update.effective_chat.id, message_chunk)
-    except:
-        await context.bot.send_message(update.effective_chat.id, "Some error in error handler")
+    #     # split text into multiple messages due to 4096 character limit
+    #     for message_chunk in split_text_into_chunks(message, 4096):
+    #         try:
+    #             await context.bot.send_message(update.effective_chat.id, message_chunk, parse_mode=ParseMode.HTML)
+    #         except BadRequest:
+    #             # answer has invalid characters, so we send it without parse_mode
+    #             await context.bot.send_message(update.effective_chat.id if update else None, message_chunk)
+    # except:
+    #     pass
+    #     # await context.bot.send_message(update.effective_chat.id if update else None, "Some error in error handler")
 
 async def post_init(application: Application):
     await application.bot.set_my_commands([

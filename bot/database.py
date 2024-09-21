@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from pymongo import MongoClient
 
-from bot.config import MONGODB_URI, MODELS
+from config import MONGODB_URI, MODELS
 
 
 class Database:
