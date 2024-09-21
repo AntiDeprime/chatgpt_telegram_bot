@@ -4,3 +4,7 @@ assistant:
   welcome_message: Hi, I'm <b>ChatGPT</b>. How can I help you?
   prompt_start: ''
   parse_mode: html
+
+artist:
+  name: Dall-e 
+  welcome_message: Describe the image you want to generate! 
