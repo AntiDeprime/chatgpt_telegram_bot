@@ -2,8 +2,8 @@ available_text_models:
   - gpt-4o
   - gpt-4o-2024-08-06
   - gpt-4o-mini
-  - o1-preview
-  - o1-mini
+  # - o1-preview
+  # - o1-mini
 
 available_image_reasoning_models:
   - gpt-4o
@@ -45,27 +45,27 @@ info:
       Fast: 5
       Cheap: 5
 
-  o1-preview:
-    type: chat_completion
-    name: o1-preview
-    description: The reasoning model designed to solve complex problems across domains. Requires thorough internal thought process before responding.
-    price_per_1M_input_tokens: 15.00
-    price_per_1M_output_tokens: 60.00
-    scores:
-      Smart: 5
-      Fast: 2
-      Cheap: 1
+  # o1-preview:
+  #   type: chat_completion
+  #   name: o1-preview
+  #   description: The reasoning model designed to solve complex problems across domains. Requires thorough internal thought process before responding.
+  #   price_per_1M_input_tokens: 15.00
+  #   price_per_1M_output_tokens: 60.00
+  #   scores:
+  #     Smart: 5
+  #     Fast: 2
+  #     Cheap: 1
 
-  o1-mini:
-    type: chat_completion
-    name: o1-mini
-    description: A faster and cheaper reasoning model particularly suitable for coding, math, and science tasks.
-    price_per_1M_input_tokens: 3.00
-    price_per_1M_output_tokens: 12.00
-    scores:
-      Smart: 4
-      Fast: 3
-      Cheap: 3
+  # o1-mini:
+  #   type: chat_completion
+  #   name: o1-mini
+  #   description: A faster and cheaper reasoning model particularly suitable for coding, math, and science tasks.
+  #   price_per_1M_input_tokens: 3.00
+  #   price_per_1M_output_tokens: 12.00
+  #   scores:
+  #     Smart: 4
+  #     Fast: 3
+  #     Cheap: 3
 
   dalle-2:
      type: image

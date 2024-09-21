@@ -95,7 +95,7 @@ async def register_user_if_not_exists(update: Update, context: CallbackContext, 
     n_used_tokens = db.get_user_attribute(user.id, "n_used_tokens")
     if isinstance(n_used_tokens, int) or isinstance(n_used_tokens, float):  # old format
         new_n_used_tokens = {
-            "gpt-3.5-turbo": {
+            MODELS["default_model"]: {
                 "n_input_tokens": 0,
                 "n_output_tokens": n_used_tokens
             }
@@ -186,9 +186,9 @@ async def _vision_message_handle_fn(
     user_id = update.message.from_user.id
     current_model = db.get_user_attribute(user_id, "current_model")
 
-    if current_model != "gpt-4-vision-preview" and current_model != "gpt-4o":
+    if current_model not in MODELS["available_image_reasoning_models"]:
         await update.message.reply_text(
-            "🥲 Images processing is only available for <b>gpt-4-vision-preview</b> and <b>gpt-4o</b> model. Please change your settings in /settings",
+            f"🥲 Images processing is only available for {MODELS['available_image_reasoning_models']} models. Please change your settings in /settings",
             parse_mode=ParseMode.HTML,
         )
         return
@@ -460,14 +460,14 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
             await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
     async with user_semaphores[user_id]:
-        if current_model == "gpt-4-vision-preview" or current_model == "gpt-4o" or update.message.photo is not None and len(update.message.photo) > 0:
+        if current_model in MODELS["available_image_reasoning_models"] or update.message.photo is not None and len(update.message.photo) > 0:
 
             logger.error(current_model)
             # What is this? ^^^
 
-            if current_model != "gpt-4o" and current_model != "gpt-4-vision-preview":
-                current_model = "gpt-4o"
-                db.set_user_attribute(user_id, "current_model", "gpt-4o")
+            if current_model not in MODELS["available_image_reasoning_models"]:
+                current_model = MODELS["available_image_reasoning_models"][0]
+                db.set_user_attribute(user_id, "current_model", MODELS["available_image_reasoning_models"][0])
             task = create_task(
                 _vision_message_handle_fn(update, context, use_new_dialog_timeout=use_new_dialog_timeout)
             )
