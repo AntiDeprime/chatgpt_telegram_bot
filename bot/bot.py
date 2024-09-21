@@ -34,12 +34,6 @@ from bot.database import Database
 from bot.config import MODELS, HELP_GROUP_CHAT_VIDEO_PATH, NEW_DIALOG_TIMEOUT, CHAT_MODES, ENABLE_MESSAGE_STREAMING, RETURN_N_GENERATED_IMAGES, IMAGE_SIZE, TELEGRAM_TOKEN, ALLOWED_TELEGRAM_USERNAMES
 from bot.openai_utils import ChatGPT, generate_images, transcribe_audio
 
-# import config
-# import database
-# import openai_utils
-
-# import base64
-
 # setup
 db = Database()
 logger = getLogger(__name__)
